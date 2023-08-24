@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { GlobalStyle } from './GlobalStyle';
 import { ContactForm } from './ContactForm/ContactForm';
 import { Contacts } from './Contacts/Contacts';
@@ -12,78 +12,55 @@ const initialContacts = [
   { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
   { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
 ];
+
 const localStorageKey = 'contacts';
 
-export class App extends Component {
-  state = {
-    contacts: initialContacts,
-    name: '',
-    number: '',
-    filter: '',
-  };
-
-  componentDidMount() {
-    const savedContacts = localStorage.getItem(localStorageKey);
-    if (savedContacts !== null) {
-      this.setState({
-        contacts: JSON.parse(savedContacts),
-      });
-    }
+const getContacts = () => {
+  const savedContacts = localStorage.getItem(localStorageKey);
+  if (savedContacts !== null) {
+    return JSON.parse(savedContacts);
   }
+  return initialContacts;
+};
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      localStorage.setItem(
-        localStorageKey,
-        JSON.stringify(this.state.contacts)
-      );
-    }
-  }
+export const App = () => {
+  const [contacts, setContacts] = useState(getContacts);
+  const [filter, setFilter] = useState('');
 
-  filterByName = valueName => {
-    this.setState(() => {
-      return { filter: valueName };
-    });
+  //запис контактів в локалсторидж
+  useEffect(() => {
+    localStorage.setItem(localStorageKey, JSON.stringify(contacts));
+  }, [contacts]);
+
+  const selectedName = contacts.filter(elem =>
+    elem.name.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  const filterByName = valueName => {
+    setFilter(valueName);
   };
 
-  addContact = newContact => {
-    this.setState(prevState => {
-      return {
-        contacts: [...prevState.contacts, newContact],
-      };
-    });
+  const addContact = newContact => {
+    setContacts(prevState => [...prevState, newContact]);
   };
 
-  deleteContact = contactId => {
-    this.setState(prevState => {
-      return {
-        contacts: prevState.contacts.filter(elem => elem.id !== contactId),
-      };
-    });
+  const deleteContact = contactId => {
+    setContacts(prevState => prevState.filter(elem => elem.id !== contactId));
   };
 
-  render() {
-    const { contacts, filter } = this.state;
-    const selectedName = contacts.filter(elem =>
-      elem.name.toLowerCase().includes(filter.toLowerCase())
-    );
-    return (
-      <Layout>
-        <Section title="Phonebook">
-          <ContactForm onAddContact={this.addContact}></ContactForm>
-        </Section>
-        <Section title="Contacts">
-          <FilterName
-            searchName={filter}
-            onSearch={this.filterByName}
-          ></FilterName>
-          <Contacts
-            contacts={selectedName}
-            onDeleteContact={this.deleteContact}
-          ></Contacts>
-        </Section>
-        <GlobalStyle />
-      </Layout>
-    );
-  }
-}
+  return (
+    <Layout>
+      <Section title="Phonebook">
+        <ContactForm onAddContact={addContact}></ContactForm>
+      </Section>
+      <Section title="Contacts">
+        <FilterName searchName={filter} onSearch={filterByName}></FilterName>
+        <Contacts
+          contacts={selectedName}
+          onDeleteContact={deleteContact}
+        ></Contacts>
+      </Section>
+      <GlobalStyle />
+    </Layout>
+  );
+};
